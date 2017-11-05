@@ -88,3 +88,7 @@ Files already downloaded and verified
 [Epoch 84] Time: 3174.7603240013123, Train loss: 0.0038057685893774034, Train accuracy: 0.84744, Test loss: 0.005041036084294319, Test accuracy: 0.8056
 [Epoch 85] Time: 3213.9912478923798, Train loss: 0.004318884232640267, Train accuracy: 0.82616, Test loss: 0.00508056164085865, Test accuracy: 0.8043
 [Epoch 86] Time: 3253.1157524585724, Train loss: 0.0036633053067326544, Train accuracy: 0.85036, Test loss: 0.0043898657470941545, Test accuracy: 0.8248
+[Epoch 87] Time: 3292.6125729084015, Train loss: 0.003848352807164192, Train accuracy: 0.8436, Test loss: 0.004518081921339035, Test accuracy: 0.8208
+[Epoch 88] Time: 3332.1357057094574, Train loss: 0.0037198386469483374, Train accuracy: 0.84608, Test loss: 0.004506777319312096, Test accuracy: 0.8169
+[Epoch 89] Time: 3371.921634197235, Train loss: 0.004212594811916351, Train accuracy: 0.82868, Test loss: 0.0049911760002374645, Test accuracy: 0.8004
+[Epoch 90] Time: 3411.759590148926, Train loss: 0.003991485279798508, Train accuracy: 0.84288, Test loss: 0.004882151943445206, Test accuracy: 0.8114
