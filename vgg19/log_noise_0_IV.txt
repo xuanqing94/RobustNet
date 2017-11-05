@@ -1,0 +1,28 @@
+Namespace(batchSize=128, epoch=25, lr=0.0125, method='momsgd', modelIn='noise0_III.pth', modelOut='noise0_IV.pth', ngpu=1, noise=0.0)
+Files already downloaded and verified
+Files already downloaded and verified
+[Epoch 0] Time: 39.55238890647888, Train loss: 0.0005619801507890224, Train accuracy: 0.97656, Test loss: 0.002772984658181667, Test accuracy: 0.8989
+[Epoch 1] Time: 78.84250974655151, Train loss: 0.0005181573682278395, Train accuracy: 0.97764, Test loss: 0.0027451096668839456, Test accuracy: 0.9011
+[Epoch 2] Time: 118.13551139831543, Train loss: 0.0004938910471275449, Train accuracy: 0.97932, Test loss: 0.0028232932090759277, Test accuracy: 0.8959
+[Epoch 3] Time: 157.4266185760498, Train loss: 0.0004904079230129719, Train accuracy: 0.97878, Test loss: 0.0030875714182853698, Test accuracy: 0.8947
+[Epoch 4] Time: 196.76388454437256, Train loss: 0.0004784832488000393, Train accuracy: 0.98012, Test loss: 0.0028425716921687124, Test accuracy: 0.9037
+[Epoch 5] Time: 236.0861463546753, Train loss: 0.0005954745950177312, Train accuracy: 0.97484, Test loss: 0.0029626922205090523, Test accuracy: 0.8953
+[Epoch 6] Time: 275.4260265827179, Train loss: 0.0005545127507671714, Train accuracy: 0.97582, Test loss: 0.0030283853232860565, Test accuracy: 0.8939
+[Epoch 7] Time: 314.7318253517151, Train loss: 0.0005448910640925169, Train accuracy: 0.97716, Test loss: 0.0030238285213708875, Test accuracy: 0.898
+[Epoch 8] Time: 354.0553960800171, Train loss: 0.0005695089982077479, Train accuracy: 0.97528, Test loss: 0.0029324481546878813, Test accuracy: 0.8947
+[Epoch 9] Time: 393.37259435653687, Train loss: 0.0005859057802706957, Train accuracy: 0.9751, Test loss: 0.002943176956474781, Test accuracy: 0.8995
+[Epoch 10] Time: 432.67699217796326, Train loss: 0.0006170138119161129, Train accuracy: 0.97308, Test loss: 0.0031490803241729735, Test accuracy: 0.8886
+[Epoch 11] Time: 472.0121214389801, Train loss: 0.0005995774925127626, Train accuracy: 0.97322, Test loss: 0.0030416486993432045, Test accuracy: 0.8957
+[Epoch 12] Time: 511.3372371196747, Train loss: 0.0006403434419259429, Train accuracy: 0.97242, Test loss: 0.0031418697640299797, Test accuracy: 0.8884
+[Epoch 13] Time: 550.6614377498627, Train loss: 0.0005893611061945558, Train accuracy: 0.974, Test loss: 0.00312289060652256, Test accuracy: 0.8912
+[Epoch 14] Time: 589.9792349338531, Train loss: 0.0007093400434032083, Train accuracy: 0.97098, Test loss: 0.003437941539287567, Test accuracy: 0.8888
+[Epoch 15] Time: 629.2742345333099, Train loss: 0.0007523620882630348, Train accuracy: 0.96808, Test loss: 0.0031786677598953247, Test accuracy: 0.8949
+[Epoch 16] Time: 668.5686309337616, Train loss: 0.0006713646709173918, Train accuracy: 0.96978, Test loss: 0.0031867729306221007, Test accuracy: 0.8849
+[Epoch 17] Time: 707.8893003463745, Train loss: 0.0006474962314590812, Train accuracy: 0.97334, Test loss: 0.003033845730125904, Test accuracy: 0.8931
+[Epoch 18] Time: 747.2015800476074, Train loss: 0.0006796529485657811, Train accuracy: 0.97284, Test loss: 0.0030892190381884574, Test accuracy: 0.8895
+[Epoch 19] Time: 786.5437047481537, Train loss: 0.0005619364118948579, Train accuracy: 0.97528, Test loss: 0.002989957158267498, Test accuracy: 0.8961
+[Epoch 20] Time: 825.8962032794952, Train loss: 0.0005908950944244862, Train accuracy: 0.97394, Test loss: 0.0032731791481375692, Test accuracy: 0.8885
+[Epoch 21] Time: 865.3137600421906, Train loss: 0.0006138579972460866, Train accuracy: 0.97458, Test loss: 0.0030774892583489417, Test accuracy: 0.8937
+[Epoch 22] Time: 904.7091159820557, Train loss: 0.0007139979117363691, Train accuracy: 0.96916, Test loss: 0.0032124133482575416, Test accuracy: 0.893
+[Epoch 23] Time: 944.0334794521332, Train loss: 0.0008110898681730032, Train accuracy: 0.96544, Test loss: 0.003223917429149151, Test accuracy: 0.8855
+[Epoch 24] Time: 983.4402902126312, Train loss: 0.0006268319982662796, Train accuracy: 0.97442, Test loss: 0.003183324021100998, Test accuracy: 0.89
