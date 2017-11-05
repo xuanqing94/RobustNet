@@ -7,7 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.autograd import Variable
+from . import layer
 
+Noise = layer.Noise
 
 class Block(nn.Module):
     '''Grouped convolution block.'''

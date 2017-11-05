@@ -23,19 +23,16 @@ def read_f(fn):
 
 def data():
     model = "./vgg16/"
-    noise_level = ["0", "0.01", "0.1"]
-    level_color = ['firebrick', 'olivedrab', 'deepskyblue']
-    stages = ["I", "II", "III", "IV"]
-    dataf = {}
-    for level in noise_level:
-        dataf[level] = [model + 'log_noise_{}_{}.txt'.format(level, k) for k in stages]
+    noise_level = ["0", "0.1", "0.2", "0.3"]
+    level_color = ['firebrick', 'olivedrab', 'deepskyblue', 'darkorchid']
+    dataf = [model + 'log_noise_{}.txt'.format(level) for level in noise_level]
     data = {}
-    for level in noise_level:
+    for i, level in enumerate(noise_level):
         data_level = {'train': [], 'test': []}
-        for f in dataf[level]:
-            train_noise, test_noise = read_f(f)
-            data_level['train'] += train_noise
-            data_level['test'] += test_noise
+        f = dataf[i]
+        train_noise, test_noise = read_f(f)
+        data_level['train'] = train_noise
+        data_level['test'] = test_noise
         data[level] = data_level
 
     for col, level in zip(level_color, noise_level):
