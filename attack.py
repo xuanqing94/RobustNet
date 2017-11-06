@@ -13,15 +13,29 @@ import numpy as np
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-def attack(input_v, label_v, net, loss, c):
+def attack(input_v, label_v, net, c, TARGETED=False):
+    n_class = len(classes)
+    index = label_v.data.cpu().view(-1,1)
+    label_onehot = torch.FloatTensor(input_v.size()[0] , n_class)
+    label_onehot.zero_()
+    label_onehot.scatter_(1,index,1)
+    label_onehot_v = Variable(label_onehot, requires_grad = False).cuda()
+	#print(label_onehot.scatter)
     adverse = torch.FloatTensor(input_v.size()).zero_().cuda()
     adverse_v = Variable(adverse, requires_grad=True)
-    optimizer = optim.SGD([adverse_v], lr=1)
-    softmax = nn.Softmax()
+    optimizer = optim.Adam([adverse_v], lr=0.1)
     for _ in range(300):
         optimizer.zero_grad()
         diff = adverse_v - input_v
-        error = c * torch.sum(diff * diff) - loss(net(adverse_v), label_v)
+        output = net(adverse_v)
+        real = torch.sum(torch.max(torch.mul(output, label_onehot_v), 1)[0])
+        other = torch.sum(torch.max(torch.mul(output, (1-label_onehot_v))-label_onehot_v*10000,1)[0])
+        error = c * torch.sum(diff * diff)
+        #print(error.size())
+        if TARGETED:
+            error += other - real
+        else:
+            error += real - other
         error.backward()
         optimizer.step()
     return adverse_v
@@ -44,7 +58,7 @@ if __name__ == "__main__":
     parser.add_argument('--noise', type=float, default=0)
     opt = parser.parse_args()
 
-    net = VGG("VGG19", opt.noise)
+    net = VGG("VGG16", opt.noise)
     net = nn.DataParallel(net, device_ids=range(1))
     loss_f = nn.CrossEntropyLoss()
     net.apply(weights_init)
@@ -72,7 +86,7 @@ if __name__ == "__main__":
     count, count2 = 0, 0
     for input, output in dataloader_test:
         input_v, label_v = Variable(input.cuda()), Variable(output.cuda())
-        adverse_v = attack(input_v, label_v, net, loss_f, opt.c)
+        adverse_v = attack(input_v, label_v, net, opt.c)
         _, idx = torch.max(net(input_v), 1)
         _, idx2 = torch.max(net(adverse_v), 1)
         count += torch.sum(label_v.eq(idx)).data[0]
