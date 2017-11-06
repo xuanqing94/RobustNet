@@ -44,7 +44,7 @@ if __name__ == "__main__":
     parser.add_argument('--noise', type=float, default=0)
     opt = parser.parse_args()
 
-    net = VGG("VGG19", opt.noise)
+    net = VGG("VGG16", opt.noise)
     net = nn.DataParallel(net, device_ids=range(1))
     loss_f = nn.CrossEntropyLoss()
     net.apply(weights_init)
