@@ -21,7 +21,7 @@ def attack(input_v, label_v, net, c, TARGETED=False):
     label_onehot.scatter_(1,index,1)
     label_onehot_v = Variable(label_onehot, requires_grad = False).cuda()
 	#print(label_onehot.scatter)
-    adverse = torch.FloatTensor(input_v.size()).zero_().cuda()
+    adverse = input_v.data #torch.FloatTensor(input_v.size()).zero_().cuda()
     adverse_v = Variable(adverse, requires_grad=True)
     optimizer = optim.Adam([adverse_v], lr=0.1)
     for _ in range(300):
@@ -33,9 +33,9 @@ def attack(input_v, label_v, net, c, TARGETED=False):
         error = c * torch.sum(diff * diff)
         #print(error.size())
         if TARGETED:
-            error += other - real
+            error += torch.clamp(other - real, min=0)
         else:
-            error += real - other
+            error += torch.clamp(real - other, min=0)
         error.backward()
         optimizer.step()
     return adverse_v
