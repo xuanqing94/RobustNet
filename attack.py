@@ -30,13 +30,13 @@ def attack(input_v, label_v, net, c, targeted=False):
         diff = adverse_v - input_v
         output = net(adverse_v)
         #real = output.gather(label_v.data.view(-1, 1))
-        real = torch.sum(torch.max(torch.mul(output, label_onehot_v), 1)[0])
-        other = torch.sum(torch.max(torch.mul(output, (1-label_onehot_v))-label_onehot_v*10000,1)[0])
-        error = torch.sum(diff * diff)
+        real = (torch.max(torch.mul(output, label_onehot_v), 1)[0])
+        other = (torch.max(torch.mul(output, (1-label_onehot_v))-label_onehot_v*10000,1)[0])
+        error = c * torch.sum(diff * diff)
         if targeted:
-            error += c * (other - real)
+            error += torch.sum(torch.max((other - real, zero_v))
         else:
-            error += c * (real - other)
+            error += torch.sum(torch.max(real - other, zero_v))
         print("Error: {}".format(error.data[0]))
         error.backward()
         optimizer.step()

@@ -64,7 +64,7 @@ class ResNeXt(nn.Module):
         self.layer3 = self._make_layer(num_blocks[2], 2)
         # self.layer4 = self._make_layer(num_blocks[3], 2)
         self.linear = nn.Linear(cardinality*bottleneck_width*8, num_classes)
-        self.init_noise = Noise(std * 3)
+        self.init_noise = Noise(std)
 
     def _make_layer(self, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)

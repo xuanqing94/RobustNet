@@ -12,51 +12,42 @@ from models import *
 from torch.utils.data import DataLoader
 import time
 
-def accuracy(dataloader, net):
-    data_iter = iter(dataloader)
-    count = 0
+# train one epoch
+def train(dataloader, net, loss_f, optimizer):
+    net.train()
+    beg = time.time()
     total = 0
-    for x, y in data_iter:
-        vx = Variable(x, volatile=True).cuda()
-        tmp = torch.sum(torch.eq(y.cuda(), torch.max(net(vx), dim=1)[1]).data)
-        count += int(tmp)
-        total += y.size()[0]
-    return count / total
+    correct = 0
+    for x, y in dataloader:
+        x, y = x.cuda(), y.cuda()
+        vx, vy = Variable(x), Variable(y)
+        optimizer.zero_grad()
+        output = net(vx)
+        lossv = loss_f(output, vy)
+        lossv.backward()
+        optimizer.step()
+        correct += y.eq(torch.max(output.data, 1)[1]).sum()
+        total += y.numel()
+    run_time = time.time() - beg
+    return run_time, correct / total
 
-def loss(dataloader, net, loss_f):
-    data_iter = iter(dataloader)
-    total_loss = 0.0
-    count = 0
-    for x, y in data_iter:
-        vx = Variable(x, volatile=True).cuda()
-        vy = Variable(y).cuda()
-        total_loss += torch.sum(loss_f(net(vx), vy).data)
-        count += y.size()[0]
-    return total_loss / count
-
-def train_other(dataloader, dataloader_test, net, loss_f, lr, name='adam', max_epoch=10):
-    run_time = 0.0
-    if name == 'adam':
-        optimizer = optim.Adam(net.parameters(), lr=lr)
-    elif name == 'rmsprop':
-        optimizer = optim.RMSprop(net.parameters(), lr=lr)
-    elif name == 'momsgd':
-        optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5.0e-4)
+# test and save
+def test(dataloader, net, best_acc, model_out):
+    net.eval()
+    total = 0
+    correct = 0
+    for x, y in dataloader:
+        x, y = x.cuda(), y.cuda()
+        vx = Variable(x, volatile=True)
+        output = net(vx)
+        correct += y.eq(torch.max(output.data, 1)[1]).sum()
+        total += y.numel()
+    acc = correct / total
+    if acc > best_acc:
+        torch.save(net.state_dict(), model_out)
+        return acc, acc
     else:
-        print('Not implemented')
-        exit(-1)
-    for epoch in range(max_epoch):
-        beg = time.time()
-        data_iter = iter(dataloader)
-        for x, y in data_iter:
-            vx, vy = Variable(x).cuda(), Variable(y).cuda()
-            optimizer.zero_grad()
-            lossv = loss_f(net(vx), vy)
-            lossv.backward()
-            optimizer.step()
-        run_time += time.time() - beg
-        print("[Epoch {}] Time: {}, Train loss: {}, Train accuracy: {}, Test loss: {}, Test accuracy: {}".format(epoch, run_time, loss(dataloader, net, loss_f), accuracy(dataloader, net), loss(dataloader_test, net, loss_f), accuracy(dataloader_test, net)))
-
+        return acc, best_acc
 
 def weights_init(m):
     classname = m.__class__.__name__
@@ -80,7 +71,7 @@ def main():
     parser.add_argument('--noise', type=float, default=0.0)
     opt = parser.parse_args()
     print(opt)
-    epochs = [80, 60, 40]
+    epochs = [80, 60, 40, 20]
     #net = VGG("VGG16", opt.noise)
     net = ResNeXt29_2x64d(opt.noise)
     #net = densenet_cifar()
@@ -111,12 +102,18 @@ def main():
     assert data, data_test
     dataloader = DataLoader(data, batch_size=opt.batchSize, shuffle=True, num_workers=2)
     dataloader_test = DataLoader(data_test, batch_size=opt.batchSize, shuffle=True, num_workers=2)
+    accumulate = 0
+    best_acc = 0
+    total_time = 0
     for epoch in epochs:
-        train_other(dataloader, dataloader_test, net, loss_f, opt.lr, opt.method, epoch)
+        optimizer = optim.SGD(net.parameters(), lr=opt.lr, momentum=.9, weight_decay=5.0e-4)
+        for _ in range(epoch):
+            accumulate += 1
+            run_time, train_acc = train(dataloader, net, loss_f, optimizer)
+            test_acc, best_acc = test(dataloader_test, net, best_acc, opt.modelOut)
+            total_time += run_time
+            print('[Epoch={}] Time:{:.2f}, Train: {:.5f}, Test: {:.5f}, Best: {:.5f}'.format(accumulate, total_time, train_acc, test_acc, best_acc))
         opt.lr /= 10
-    # save model
-    if opt.modelOut is not None:
-        torch.save(net.state_dict(), opt.modelOut)
 
 if __name__ == "__main__":
    main()
