@@ -23,18 +23,17 @@ def attack(input_v, label_v, net, c, targeted=False):
     label_onehot_v = Variable(label_onehot, requires_grad = False).cuda()
     adverse = input_v.data.clone()
     adverse_v = Variable(adverse, requires_grad=True)
-    optimizer = optim.Adam([adverse_v], lr=0.1)
+    optimizer = optim.Adam([adverse_v], lr=0.001)
     zero_v = Variable(torch.FloatTensor([0]).cuda(), requires_grad=False)
     for _ in range(300):
         optimizer.zero_grad()
         diff = adverse_v - input_v
         output = net(adverse_v)
-        #real = output.gather(label_v.data.view(-1, 1))
         real = (torch.max(torch.mul(output, label_onehot_v), 1)[0])
         other = (torch.max(torch.mul(output, (1-label_onehot_v))-label_onehot_v*10000,1)[0])
         error = c * torch.sum(diff * diff)
         if targeted:
-            error += torch.sum(torch.max((other - real, zero_v))
+            error += torch.sum(torch.max(other - real, zero_v))
         else:
             error += torch.sum(torch.max(real - other, zero_v))
         print("Error: {}".format(error.data[0]))
@@ -48,6 +47,7 @@ def acc_under_attack(dataloader, net, c, targeted=False):
     for input, output in dataloader:
         input_v, label_v = Variable(input.cuda()), Variable(output.cuda())
         adverse_v = attack(input_v, label_v, net, opt.c)
+        net.eval()
         _, idx = torch.max(net(adverse_v), 1)
         correct += torch.sum(label_v.eq(idx)).data[0]
         tot += output.numel()
@@ -58,13 +58,12 @@ def peek(dataloader, net, c, targeted=False):
     for input, output in dataloader:
         input_v, label_v = Variable(input.cuda()), Variable(output.cuda())
         adverse_v = attack(input_v, label_v, net, opt.c, targeted)
-        #net.eval()
+        net.eval()
         _, idx = torch.max(net(input_v), 1)
         _, idx2 = torch.max(net(adverse_v), 1)
         count += torch.sum(label_v.eq(idx)).data[0]
         count2 += torch.sum(label_v.eq(idx2)).data[0]
         print("Count: {}, Count2: {}".format(count, count2))
-
         adverse_v.data = adverse_v.data * std_t + mean_t
         input_v.data = input_v.data * std_t + mean_t
         adverse_np = adverse_v.cpu().data.numpy().swapaxes(1, 3)

@@ -11,6 +11,7 @@ import torchvision.transforms as tfs
 from models import *
 from torch.utils.data import DataLoader
 import time
+import sys
 
 # train one epoch
 def train(dataloader, net, loss_f, optimizer):
@@ -65,6 +66,7 @@ def main():
     parser.add_argument('--epoch', type=int, default=300)
     parser.add_argument('--lr', type=float, default=1.0)
     parser.add_argument('--ngpu', type=int, default=1)
+    parser.add_argument('--net', type=str, default=None)
     parser.add_argument('--modelIn', type=str, default=None)
     parser.add_argument('--modelOut', type=str, default=None)
     parser.add_argument('--method', type=str, default="momsgd")
@@ -72,8 +74,16 @@ def main():
     opt = parser.parse_args()
     print(opt)
     epochs = [80, 60, 40, 20]
-    #net = VGG("VGG16", opt.noise)
-    net = ResNeXt29_2x64d(opt.noise)
+    if opt.net is None:
+        print("opt.net must be specified")
+        exit(-1)
+    elif opt.net == "vgg16":
+        net = VGG("VGG16", opt.noise, opt.noise)
+    elif opt.net == "resnetxt":
+        net = ResNeXt29_2x64d(opt.noise)
+    else:
+        print("Invalid opt.net: {}".format(opt.net))
+        exit(-1)
     #net = densenet_cifar()
     #net = GoogLeNet()
     #net = MobileNet(num_classes=100)
@@ -113,6 +123,10 @@ def main():
             test_acc, best_acc = test(dataloader_test, net, best_acc, opt.modelOut)
             total_time += run_time
             print('[Epoch={}] Time:{:.2f}, Train: {:.5f}, Test: {:.5f}, Best: {:.5f}'.format(accumulate, total_time, train_acc, test_acc, best_acc))
+            sys.stdout.flush()
+        # reload best model
+        net.load_state_dict(torch.load(opt.modelOut))
+        net.cuda()
         opt.lr /= 10
 
 if __name__ == "__main__":
