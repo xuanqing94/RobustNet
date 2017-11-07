@@ -13,32 +13,68 @@ import numpy as np
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-def attack(input_v, label_v, net, c, TARGETED=False):
+def attack(input_v, label_v, net, c, targeted=False):
+    net.train()
     n_class = len(classes)
     index = label_v.data.cpu().view(-1,1)
     label_onehot = torch.FloatTensor(input_v.size()[0] , n_class)
     label_onehot.zero_()
     label_onehot.scatter_(1,index,1)
     label_onehot_v = Variable(label_onehot, requires_grad = False).cuda()
-	#print(label_onehot.scatter)
-    adverse = torch.FloatTensor(input_v.size()).zero_().cuda()
+    adverse = input_v.data.clone()
     adverse_v = Variable(adverse, requires_grad=True)
     optimizer = optim.Adam([adverse_v], lr=0.1)
+    zero_v = Variable(torch.FloatTensor([0]).cuda(), requires_grad=False)
     for _ in range(300):
         optimizer.zero_grad()
         diff = adverse_v - input_v
         output = net(adverse_v)
+        #real = output.gather(label_v.data.view(-1, 1))
         real = torch.sum(torch.max(torch.mul(output, label_onehot_v), 1)[0])
         other = torch.sum(torch.max(torch.mul(output, (1-label_onehot_v))-label_onehot_v*10000,1)[0])
-        error = c * torch.sum(diff * diff)
-        #print(error.size())
-        if TARGETED:
-            error += other - real
+        error = torch.sum(diff * diff)
+        if targeted:
+            error += c * (other - real)
         else:
-            error += real - other
+            error += c * (real - other)
+        print("Error: {}".format(error.data[0]))
         error.backward()
         optimizer.step()
     return adverse_v
+
+def acc_under_attack(dataloader, net, c, targeted=False):
+    correct = 0
+    tot = 0
+    for input, output in dataloader:
+        input_v, label_v = Variable(input.cuda()), Variable(output.cuda())
+        adverse_v = attack(input_v, label_v, net, opt.c)
+        _, idx = torch.max(net(adverse_v), 1)
+        correct += torch.sum(label_v.eq(idx)).data[0]
+        tot += output.numel()
+    return correct / tot
+
+def peek(dataloader, net, c, targeted=False):
+    count, count2 = 0, 0
+    for input, output in dataloader:
+        input_v, label_v = Variable(input.cuda()), Variable(output.cuda())
+        adverse_v = attack(input_v, label_v, net, opt.c, targeted)
+        #net.eval()
+        _, idx = torch.max(net(input_v), 1)
+        _, idx2 = torch.max(net(adverse_v), 1)
+        count += torch.sum(label_v.eq(idx)).data[0]
+        count2 += torch.sum(label_v.eq(idx2)).data[0]
+        print("Count: {}, Count2: {}".format(count, count2))
+
+        adverse_v.data = adverse_v.data * std_t + mean_t
+        input_v.data = input_v.data * std_t + mean_t
+        adverse_np = adverse_v.cpu().data.numpy().swapaxes(1, 3)
+        input_np = input_v.cpu().data.numpy().swapaxes(1, 3)
+        plt.subplot(121)
+        plt.imshow(np.abs(input_np[0, :, :, :].squeeze()))
+        plt.subplot(122)
+        plt.imshow(np.abs(adverse_np[0, :, :, :].squeeze()))
+        plt.show()
+
 
 def weights_init(m):
     classname = m.__class__.__name__
@@ -83,24 +119,4 @@ if __name__ == "__main__":
     assert data, data_test
     dataloader = DataLoader(data, batch_size=100, shuffle=True, num_workers=2)
     dataloader_test = DataLoader(data_test, batch_size=100, shuffle=True, num_workers=2)
-    count, count2 = 0, 0
-    for input, output in dataloader_test:
-        input_v, label_v = Variable(input.cuda()), Variable(output.cuda())
-        adverse_v = attack(input_v, label_v, net, opt.c)
-        _, idx = torch.max(net(input_v), 1)
-        _, idx2 = torch.max(net(adverse_v), 1)
-        count += torch.sum(label_v.eq(idx)).data[0]
-        count2 += torch.sum(label_v.eq(idx2)).data[0]
-        print("Count: {}, Count2: {}".format(count, count2))
-
-        adverse_v.data = adverse_v.data * std_t + mean_t
-        input_v.data = input_v.data * std_t + mean_t
-        adverse_np = adverse_v.cpu().data.numpy().swapaxes(1, 3)
-        input_np = input_v.cpu().data.numpy().swapaxes(1, 3)
-        plt.subplot(121)
-        plt.imshow(np.abs(input_np[0, :, :, :].squeeze()))
-        plt.subplot(122)
-        plt.imshow(np.abs(adverse_np[0, :, :, :].squeeze()))
-        plt.show()
-
-    print("Accuracy: {}, Attach: {}".format(count / len(data), count2 / len(data)))
+    peek(dataloader, net, opt.c, False)

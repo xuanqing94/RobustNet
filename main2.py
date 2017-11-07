@@ -71,7 +71,7 @@ def weights_init(m):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batchSize', type=int, default=128)
-    parser.add_argument('--epoch', type=int, default=100)
+    parser.add_argument('--epoch', type=int, default=300)
     parser.add_argument('--lr', type=float, default=1.0)
     parser.add_argument('--ngpu', type=int, default=1)
     parser.add_argument('--modelIn', type=str, default=None)
@@ -80,7 +80,9 @@ def main():
     parser.add_argument('--noise', type=float, default=0.0)
     opt = parser.parse_args()
     print(opt)
-    net = VGG("VGG16", opt.noise)
+    epochs = [80, 60, 40]
+    #net = VGG("VGG16", opt.noise)
+    net = ResNeXt29_2x64d(opt.noise)
     #net = densenet_cifar()
     #net = GoogLeNet()
     #net = MobileNet(num_classes=100)
@@ -109,9 +111,9 @@ def main():
     assert data, data_test
     dataloader = DataLoader(data, batch_size=opt.batchSize, shuffle=True, num_workers=2)
     dataloader_test = DataLoader(data_test, batch_size=opt.batchSize, shuffle=True, num_workers=2)
-    for period in range(opt.epoch // 30):
-        train_other(dataloader, dataloader_test, net, loss_f, opt.lr, opt.method, 30)
-        opt.lr /= 5
+    for epoch in epochs:
+        train_other(dataloader, dataloader_test, net, loss_f, opt.lr, opt.method, epoch)
+        opt.lr /= 10
     # save model
     if opt.modelOut is not None:
         torch.save(net.state_dict(), opt.modelOut)
