@@ -1,0 +1,10 @@
+Namespace(batchSize=128, epoch=300, lr=0.1, method='momsgd', modelIn=None, modelOut='./resnetxt/noise_0.pth', ngpu=1, noise=0.0)
+Files already downloaded and verified
+Files already downloaded and verified
+[Epoch=1] Time:78.31, Train: 0.21968, Test: 0.27820, Best: 0.27820
+[Epoch=2] Time:156.15, Train: 0.36170, Test: 0.38810, Best: 0.38810
+[Epoch=3] Time:234.23, Train: 0.47444, Test: 0.52240, Best: 0.52240
+[Epoch=4] Time:312.48, Train: 0.55758, Test: 0.50930, Best: 0.52240
+[Epoch=5] Time:390.78, Train: 0.62360, Test: 0.57390, Best: 0.57390
+[Epoch=6] Time:469.09, Train: 0.66324, Test: 0.65530, Best: 0.65530
+[Epoch=7] Time:547.39, Train: 0.69226, Test: 0.65720, Best: 0.65720

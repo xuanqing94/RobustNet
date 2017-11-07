@@ -61,12 +61,12 @@ if args.resume:
     start_epoch = checkpoint['epoch']
 else:
     print('==> Building model..')
-    net = VGG('VGG16', 0)
+    #net = VGG('VGG16', 0)
     # net = ResNet18()
     # net = PreActResNet18()
     # net = GoogLeNet()
     # net = DenseNet121()
-    # net = ResNeXt29_2x64d()
+    net = ResNeXt29_2x64d()
     # net = MobileNet()
     # net = DPN92()
     # net = ShuffleNetG2()

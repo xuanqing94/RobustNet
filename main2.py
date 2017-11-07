@@ -11,52 +11,44 @@ import torchvision.transforms as tfs
 from models import *
 from torch.utils.data import DataLoader
 import time
+import sys
 
-def accuracy(dataloader, net):
-    data_iter = iter(dataloader)
-    count = 0
+# train one epoch
+def train(dataloader, net, loss_f, optimizer):
+    net.train()
+    beg = time.time()
     total = 0
-    for x, y in data_iter:
-        vx = Variable(x, volatile=True).cuda()
-        tmp = torch.sum(torch.eq(y.cuda(), torch.max(net(vx), dim=1)[1]).data)
-        count += int(tmp)
-        total += y.size()[0]
-    return count / total
+    correct = 0
+    for x, y in dataloader:
+        x, y = x.cuda(), y.cuda()
+        vx, vy = Variable(x), Variable(y)
+        optimizer.zero_grad()
+        output = net(vx)
+        lossv = loss_f(output, vy)
+        lossv.backward()
+        optimizer.step()
+        correct += y.eq(torch.max(output.data, 1)[1]).sum()
+        total += y.numel()
+    run_time = time.time() - beg
+    return run_time, correct / total
 
-def loss(dataloader, net, loss_f):
-    data_iter = iter(dataloader)
-    total_loss = 0.0
-    count = 0
-    for x, y in data_iter:
-        vx = Variable(x, volatile=True).cuda()
-        vy = Variable(y).cuda()
-        total_loss += torch.sum(loss_f(net(vx), vy).data)
-        count += y.size()[0]
-    return total_loss / count
-
-def train_other(dataloader, dataloader_test, net, loss_f, lr, name='adam', max_epoch=10):
-    run_time = 0.0
-    if name == 'adam':
-        optimizer = optim.Adam(net.parameters(), lr=lr)
-    elif name == 'rmsprop':
-        optimizer = optim.RMSprop(net.parameters(), lr=lr)
-    elif name == 'momsgd':
-        optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5.0e-4)
+# test and save
+def test(dataloader, net, best_acc, model_out):
+    net.eval()
+    total = 0
+    correct = 0
+    for x, y in dataloader:
+        x, y = x.cuda(), y.cuda()
+        vx = Variable(x, volatile=True)
+        output = net(vx)
+        correct += y.eq(torch.max(output.data, 1)[1]).sum()
+        total += y.numel()
+    acc = correct / total
+    if acc > best_acc:
+        torch.save(net.state_dict(), model_out)
+        return acc, acc
     else:
-        print('Not implemented')
-        exit(-1)
-    for epoch in range(max_epoch):
-        beg = time.time()
-        data_iter = iter(dataloader)
-        for x, y in data_iter:
-            vx, vy = Variable(x).cuda(), Variable(y).cuda()
-            optimizer.zero_grad()
-            lossv = loss_f(net(vx), vy)
-            lossv.backward()
-            optimizer.step()
-        run_time += time.time() - beg
-        print("[Epoch {}] Time: {}, Train loss: {}, Train accuracy: {}, Test loss: {}, Test accuracy: {}".format(epoch, run_time, loss(dataloader, net, loss_f), accuracy(dataloader, net), loss(dataloader_test, net, loss_f), accuracy(dataloader_test, net)))
-
+        return acc, best_acc
 
 def weights_init(m):
     classname = m.__class__.__name__
@@ -74,13 +66,24 @@ def main():
     parser.add_argument('--epoch', type=int, default=300)
     parser.add_argument('--lr', type=float, default=1.0)
     parser.add_argument('--ngpu', type=int, default=1)
+    parser.add_argument('--net', type=str, default=None)
     parser.add_argument('--modelIn', type=str, default=None)
     parser.add_argument('--modelOut', type=str, default=None)
     parser.add_argument('--method', type=str, default="momsgd")
     parser.add_argument('--noise', type=float, default=0.0)
     opt = parser.parse_args()
     print(opt)
-    net = VGG("VGG19", opt.noise)
+    epochs = [80, 60, 40, 20]
+    if opt.net is None:
+        print("opt.net must be specified")
+        exit(-1)
+    elif opt.net == "vgg16":
+        net = VGG("VGG16", opt.noise, opt.noise)
+    elif opt.net == "resnetxt":
+        net = ResNeXt29_2x64d(opt.noise)
+    else:
+        print("Invalid opt.net: {}".format(opt.net))
+        exit(-1)
     #net = densenet_cifar()
     #net = GoogLeNet()
     #net = MobileNet(num_classes=100)
@@ -109,12 +112,22 @@ def main():
     assert data, data_test
     dataloader = DataLoader(data, batch_size=opt.batchSize, shuffle=True, num_workers=2)
     dataloader_test = DataLoader(data_test, batch_size=opt.batchSize, shuffle=True, num_workers=2)
-    for period in range(opt.epoch // 30):
-        train_other(dataloader, dataloader_test, net, loss_f, opt.lr, opt.method, 30)
-        opt.lr /= 5
-    # save model
-    if opt.modelOut is not None:
-        torch.save(net.state_dict(), opt.modelOut)
+    accumulate = 0
+    best_acc = 0
+    total_time = 0
+    for epoch in epochs:
+        optimizer = optim.SGD(net.parameters(), lr=opt.lr, momentum=.9, weight_decay=5.0e-4)
+        for _ in range(epoch):
+            accumulate += 1
+            run_time, train_acc = train(dataloader, net, loss_f, optimizer)
+            test_acc, best_acc = test(dataloader_test, net, best_acc, opt.modelOut)
+            total_time += run_time
+            print('[Epoch={}] Time:{:.2f}, Train: {:.5f}, Test: {:.5f}, Best: {:.5f}'.format(accumulate, total_time, train_acc, test_acc, best_acc))
+            sys.stdout.flush()
+        # reload best model
+        net.load_state_dict(torch.load(opt.modelOut))
+        net.cuda()
+        opt.lr /= 10
 
 if __name__ == "__main__":
    main()
