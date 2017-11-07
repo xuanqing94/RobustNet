@@ -71,6 +71,7 @@ def main():
     parser.add_argument('--modelOut', type=str, default=None)
     parser.add_argument('--method', type=str, default="momsgd")
     parser.add_argument('--noise', type=float, default=0.0)
+    parser.add_argument('--root', type=str, default="./data/cifar10-py")
     opt = parser.parse_args()
     print(opt)
     epochs = [80, 60, 40, 20]
@@ -107,11 +108,11 @@ def main():
         tfs.ToTensor(),
         tfs.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
-    data = dst.CIFAR10("/home/xqliu/data/cifar10-py", download=True, train=True, transform=transform_train)
-    data_test = dst.CIFAR10("/home/xqliu/data/cifar10-py", download=True, train=False, transform=transform_test)
+    data = dst.CIFAR10(opt.root, download=True, train=True, transform=transform_train)
+    data_test = dst.CIFAR10(opt.root, download=True, train=False, transform=transform_test)
     assert data, data_test
     dataloader = DataLoader(data, batch_size=opt.batchSize, shuffle=True, num_workers=2)
-    dataloader_test = DataLoader(data_test, batch_size=opt.batchSize, shuffle=True, num_workers=2)
+    dataloader_test = DataLoader(data_test, batch_size=opt.batchSize, shuffle=False, num_workers=2)
     accumulate = 0
     best_acc = 0
     total_time = 0
