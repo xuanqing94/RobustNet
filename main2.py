@@ -80,7 +80,7 @@ def main():
     parser.add_argument('--noise', type=float, default=0.0)
     opt = parser.parse_args()
     print(opt)
-    net = VGG("VGG16", opt.noise)
+    net = VGG("VGG19", opt.noise)
     #net = densenet_cifar()
     #net = GoogLeNet()
     #net = MobileNet(num_classes=100)
@@ -104,14 +104,14 @@ def main():
         tfs.ToTensor(),
         tfs.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
-    data = dst.CIFAR10("/home/luinx/data/cifar10-py", download=True, train=True, transform=transform_train)
-    data_test = dst.CIFAR10("/home/luinx/data/cifar10-py", download=True, train=False, transform=transform_test)
+    data = dst.CIFAR10("/home/xqliu/data/cifar10-py", download=True, train=True, transform=transform_train)
+    data_test = dst.CIFAR10("/home/xqliu/data/cifar10-py", download=True, train=False, transform=transform_test)
     assert data, data_test
     dataloader = DataLoader(data, batch_size=opt.batchSize, shuffle=True, num_workers=2)
     dataloader_test = DataLoader(data_test, batch_size=opt.batchSize, shuffle=True, num_workers=2)
-    for period in range(opt.epoch // 100):
-        train_other(dataloader, dataloader_test, net, loss_f, opt.lr, opt.method, 100)
-        opt.lr /= 10
+    for period in range(opt.epoch // 30):
+        train_other(dataloader, dataloader_test, net, loss_f, opt.lr, opt.method, 30)
+        opt.lr /= 5
     # save model
     if opt.modelOut is not None:
         torch.save(net.state_dict(), opt.modelOut)

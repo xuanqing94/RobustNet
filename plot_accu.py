@@ -22,7 +22,7 @@ def read_f(fn):
 
 
 def data():
-    model = "./vgg16/"
+    model = "./vgg19/"
     noise_level = ["0", "0.1", "0.2", "0.3"]
     level_color = ['firebrick', 'olivedrab', 'deepskyblue', 'darkorchid']
     dataf = [model + 'log_noise_{}.txt'.format(level) for level in noise_level]
