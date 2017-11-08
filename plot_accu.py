@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 
 
 def parse_line(l):
-    train = float(l.split(',')[2].split(':')[1].strip())
-    test = float(l.split(',')[4].split(':')[1].strip())
+    train = float(l.split(',')[1].split(':')[1].strip())
+    test = float(l.split(',')[2].split(':')[1].strip())
     return train, test
 
 def read_f(fn):
