@@ -16,3 +16,11 @@ class Noise(nn.Module):
             x.data += self.buffer
         return x
 
+class BReLU(nn.Module):
+    def __init__(self, t):
+        super(BReLU, self).__init__()
+        assert(t > 0)
+        self.t = t
+
+    def forward(self, x):
+        return x.clamp(0, self.t)
