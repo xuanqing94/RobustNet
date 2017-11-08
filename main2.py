@@ -70,7 +70,8 @@ def main():
     parser.add_argument('--modelIn', type=str, default=None)
     parser.add_argument('--modelOut', type=str, default=None)
     parser.add_argument('--method', type=str, default="momsgd")
-    parser.add_argument('--noise', type=float, default=0.0)
+    parser.add_argument('--noiseInit', type=float, default=0.0)
+    parser.add_argument('--noiseInner', type=float, default=0.0)
     parser.add_argument('--root', type=str, default="./data/cifar10-py")
     opt = parser.parse_args()
     print(opt)
@@ -79,7 +80,7 @@ def main():
         print("opt.net must be specified")
         exit(-1)
     elif opt.net == "vgg16":
-        net = VGG("VGG16", opt.noise, opt.noise)
+        net = VGG("VGG16", opt.noiseInit, opt.noiseInner)
     elif opt.net == "resnetxt":
         net = ResNeXt29_2x64d(opt.noise)
     else:
