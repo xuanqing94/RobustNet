@@ -13,35 +13,22 @@ import numpy as np
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-def attack(input_v, label_v, net, c, TARGETED=False):
-    n_class = len(classes)
-    index = label_v.data.cpu().view(-1,1)
-    label_onehot = torch.FloatTensor(input_v.size()[0] , n_class)
-    label_onehot.zero_()
-    label_onehot.scatter_(1,index,1)
-    label_onehot_v = Variable(label_onehot, requires_grad = False).cuda()
-	#print(label_onehot.scatter)
-    #adverse = input_v.data.clone() 
-    modifier = torch.FloatTensor(input_v.size()).zero_().cuda()
-    #adverse_v = Variable(adverse, requires_grad=True)
-    modifier_v = Variable(modifier, requires_grad=True)
-    optimizer = optim.Adam([modifier_v], lr=0.001)
-    for _ in range(300):
-        optimizer.zero_grad()
-        #diff = adverse_v - input_v
-        output = net(input_v+modifier_v)
-        real = torch.max(torch.mul(output, label_onehot_v), 1)[0]
-        other = torch.max(torch.mul(output, (1-label_onehot_v))-label_onehot_v*10000,1)[0]
-        error = torch.sum(modifier_v * modifier_v)
-        #print(error.size())
-        if TARGETED:
-            error += c * torch.sum(torch.clamp(other - real, min=0))
-        else:
-            error += c * torch.sum(torch.clamp(real - other, min=0))
-        print(error.data[0])
-        error.backward()
-        optimizer.step()
-    return input_v + modifier_v
+
+def attack_fgsm(input_v, label_v, net, loss, epsilon, TARGETED = False):
+    input_v.requires_grad = True
+    adverse = torch.FloatTensor(input_v.size()).zero_().cuda()
+    adverse_v = Variable(adverse, requires_grad= True)
+    outputs = net(input_v)
+    softmax = nn.Softmax()
+    outputs = softmax(outputs)
+    #print(outputs)
+    error = loss(outputs,label_v)
+    error.backward()
+    
+    grad = torch.sign(input_v.grad.data)
+    adverse_v.data = torch.clamp(input_v.data + epsilon* grad, 0, 1)
+    return adverse_v
+
 
 def weights_init(m):
     classname = m.__class__.__name__
@@ -89,7 +76,7 @@ if __name__ == "__main__":
     count, count2 = 0, 0
     for input, output in dataloader_test:
         input_v, label_v = Variable(input.cuda()), Variable(output.cuda())
-        adverse_v = attack(input_v, label_v, net, opt.c)
+        adverse_v = attack_fgsm(input_v, label_v, net, loss_f, opt.c)
         _, idx = torch.max(net(input_v), 1)
         _, idx2 = torch.max(net(adverse_v), 1)
         count += torch.sum(label_v.eq(idx)).data[0]
