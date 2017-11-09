@@ -10,3 +10,4 @@ from .mobilenet import *
 from .shufflenet import *
 from .preact_resnet import *
 from .layer import *
+from .cifar import *

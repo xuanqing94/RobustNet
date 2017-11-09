@@ -12,7 +12,7 @@ else:
 
 import torch.utils.data as data
 
-class CIFAR10(data.Dataset):
+class CIFAR10_Aug(data.Dataset):
     """`CIFAR10 <https://www.cs.toronto.edu/~kriz/cifar.html>`_ Dataset.
 
     Args:
@@ -29,7 +29,7 @@ class CIFAR10(data.Dataset):
             downloaded again.
 
     """
-    base_folder = 'cifar-10-batches-py'
+    base_folder = 'cifar-10-batches-py-aug'
     filename = "cifar-10-python.tar.gz"
     tgz_md5 = 'c58f30108f718f92721af3b95e74349a'
     train_list = [
@@ -50,7 +50,6 @@ class CIFAR10(data.Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.train = train  # training set or test set
-
         # now load the picked numpy arrays
         if self.train:
             self.train_data = []
@@ -90,6 +89,7 @@ class CIFAR10(data.Dataset):
             self.test_data = self.test_data.reshape((-1, 3, 32, 32))
             self.test_data = self.test_data.transpose((0, 2, 3, 1))  # convert to HWC
 
+
     def __getitem__(self, index):
         """
         Args:
@@ -102,10 +102,10 @@ class CIFAR10(data.Dataset):
             img, target = self.train_data[index], self.train_labels[index]
         else:
             img, target = self.test_data[index], self.test_labels[index]
-
+        #print(img)
         # doing this so that it is consistent with all other datasets
         # to return a PIL Image
-        img = Image.fromarray(img)
+        img = Image.fromarray(img, mode='RGB')
 
         if self.transform is not None:
             img = self.transform(img)
@@ -121,15 +121,12 @@ class CIFAR10(data.Dataset):
         else:
             return len(self.test_data)
 
-class CIFAR100(CIFAR10):
+class CIFAR100_Aug(CIFAR10_Aug):
     """`CIFAR100 <https://www.cs.toronto.edu/~kriz/cifar.html>`_ Dataset.
 
     This is a subclass of the `CIFAR10` Dataset.
     """
     base_folder = 'cifar-100-python'
-    url = "https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz"
-    filename = "cifar-100-python.tar.gz"
-    tgz_md5 = 'eb9058c3a382ffc7106e4002c42a8d85'
     train_list = [
         ['train', '16019d7e3df5f24257cddd939b257f8d'],
     ]
