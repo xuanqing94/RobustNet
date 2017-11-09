@@ -79,7 +79,7 @@ def main():
     if opt.net is None:
         print("opt.net must be specified")
         exit(-1)
-    elif opt.net == "vgg16":
+    elif opt.net == "vgg16" or opt.net == "vgg16-robust":
         net = VGG("VGG16", opt.noiseInit, opt.noiseInner)
     elif opt.net == "resnetxt":
         net = ResNeXt29_2x64d(opt.noise)
@@ -109,7 +109,7 @@ def main():
         tfs.ToTensor(),
         tfs.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
-    data = dst.CIFAR10(opt.root, download=True, train=True, transform=transform_train)
+    data = CIFAR10_Aug(opt.root, 0.1, 10, train=True, transform=transform_train)
     data_test = dst.CIFAR10(opt.root, download=True, train=False, transform=transform_test)
     assert data, data_test
     dataloader = DataLoader(data, batch_size=opt.batchSize, shuffle=True, num_workers=2)
