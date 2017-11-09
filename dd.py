@@ -22,6 +22,7 @@ from torch.autograd import Variable
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
+parser.add_argument('--t', default=1, type = float, help='temperature')
 args = parser.parse_args()
 
 use_cuda = torch.cuda.is_available()
@@ -71,17 +72,26 @@ else:
     # net = SENet18()
 
 dd_net = VGG('VGG16', 0)
-
 if use_cuda:
     net.cuda()
     net = torch.nn.DataParallel(net, device_ids=range(1))
     cudnn.benchmark = True
     dd_net.cuda()
-    dd_net = torch.nn.DataParallel(net, device_ids=range(1))
+    dd_net = torch.nn.DataParallel(dd_net, device_ids=range(1))
    
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
+optimizer = optim.SGD(dd_net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
+
+
+
+def cross_entropy( input_v, target):
+    log_input = torch.log(input_v)
+    product = torch.mul(log_input, target)
+    loss = torch.sum(product)
+    loss *= -1/input_v.size()[0]
+    return loss
+
 
 # Training
 def train(epoch):
@@ -109,31 +119,41 @@ def train(epoch):
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 # dd-Training
 def dd_train(epoch):
+    t = args.t
     print('\nEpoch: %d' % epoch)
     net.eval()
     for i in net.parameters():
         i.requires_grad = False
     dd_net.train()
+    for j in dd_net.parameters():
+        j.requires_grad = True
     train_loss = 0
     correct = 0
     total = 0
+    m = nn.Softmax()
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         if use_cuda:
-            inputs, outputs = inputs.cuda(), targets.cuda()
+            inputs,  targets = inputs.cuda(),  targets.cuda()
         optimizer.zero_grad()
-        inputs= Variable(inputs)
+        inputs, targets= Variable(inputs), Variable(targets)
         dd_outputs = dd_net(inputs)
+        dd_outputs_t = m(dd_outputs/t)
         outputs = net(inputs)
-        loss = criterion(dd_outputs, outputs)
+        outputs_t = m(outputs/t)
+        #print(dd_outputs.data[0, :])
+        #print(outputs.data[0, :])
+        loss = cross_entropy(dd_outputs_t, outputs_t)
+       # print(loss.data[0],loss.requires_grad)
         loss.backward()
         optimizer.step()
 
         train_loss += loss.data[0]
-        _, predicted = torch.max(outputs.data, 1)
+        _, predicted = torch.max(dd_outputs.data, 1)
+#        _, predicted2 = torch.max(outputs.data, 1)
         total += targets.size(0)
         correct += predicted.eq(targets.data).cpu().sum()
-
-        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+#        correct2 = predicted2.eq(targets.data).cpu().sum()
+        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)' 
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
 
@@ -172,7 +192,13 @@ def test(epoch):
         torch.save(state, './checkpoint/ckpt.t7')
         best_acc = acc
 
-
-for epoch in range(start_epoch, start_epoch+200):
+lr = args.lr
+mt = 0.9
+for epoch in range(start_epoch, start_epoch+50):
     dd_train(epoch)
+    if epoch//10==0:
+        lr *= 0.95
+        mt *= 0.5
+        optimizer = optim.SGD(dd_net.parameters(), lr= lr, momentum=0.5, weight_decay=5e-4)
     #test(epoch)
+torch.save(dd_net.state.dict(), "./dd_net.pth")
