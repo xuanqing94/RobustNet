@@ -109,7 +109,7 @@ def main():
         tfs.ToTensor(),
         tfs.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
-    data = CIFAR10_Aug(opt.root, 0.1, 10, train=True, transform=transform_train)
+    data = dst.CIFAR10(opt.root, train=True, transform=transform_train)
     data_test = dst.CIFAR10(opt.root, download=True, train=False, transform=transform_test)
     assert data, data_test
     dataloader = DataLoader(data, batch_size=opt.batchSize, shuffle=True, num_workers=2)

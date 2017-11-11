@@ -18,7 +18,7 @@ class Noise(nn.Module):
         return x
 
 class BReLU(nn.Module):
-    def __init__(self, t):
+    def __init__(self, t=1):
         super(BReLU, self).__init__()
         assert(t > 0)
         self.t = t

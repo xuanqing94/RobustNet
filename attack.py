@@ -14,7 +14,7 @@ from scipy.stats import mode
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-def attack(input_v, label_v, net, c, normalize_layer, denormalize_layer, targeted):
+def attack(input_v, label_v, net, c, targeted):
     net.train()
     n_class = len(classes)
     index = label_v.data.cpu().view(-1,1)
@@ -32,18 +32,19 @@ def attack(input_v, label_v, net, c, normalize_layer, denormalize_layer, targete
         output = net(adverse_v)
         real = (torch.max(torch.mul(output, label_onehot_v), 1)[0])
         other = (torch.max(torch.mul(output, (1-label_onehot_v))-label_onehot_v*10000,1)[0])
-        error = c * torch.sum(diff * diff)
+        error = torch.sum(diff * diff)
         if targeted:
-            error += torch.sum(torch.max(other - real, zero_v))
+            error += c * torch.sum(torch.max(other - real, zero_v))
         else:
-            error += torch.sum(torch.max(real - other, zero_v))
-        print(error.data[0])
+            error += c * torch.sum(torch.max(real - other, zero_v))
+        #print(error.data[0])
         error.backward()
         optimizer.step()
         #TODO: replace with tanh change of variable
         #adverse_v.data.clamp_(0, 1)
     return adverse_v
 
+#Ensemble by voting
 def ensemble_infer(input_v, net, n=20):
     net.eval()
     batch = input_v.size()[0]
@@ -55,28 +56,45 @@ def ensemble_infer(input_v, net, n=20):
     voting = voting.squeeze()
     return Variable(torch.from_numpy(voting).long().cuda())
 
-def acc_under_attack(dataloader, net, c, targeted=False):
+#Ensemble by sum of probability
+def ensemble_infer2(input_v, net, n=50):
+    net.eval()
+    batch = input_v.size()[0]
+    softmax = nn.Softmax()
+    nclass = len(classes)
+    prob = torch.FloatTensor(batch, nclass).zero_().cuda()
+    for i in range(n):
+        #add = softmax(net(input_v))
+        #print(add.size(), prob.size())
+        prob += softmax(net(input_v)).data
+    _, pred = torch.max(prob, 1)
+    return Variable(pred)
+
+def acc_under_attack(dataloader, net, c, ensemble=1, targeted=False):
     correct = 0
     tot = 0
     for input, output in dataloader:
         input_v, label_v = Variable(input.cuda()), Variable(output.cuda())
-        adverse_v = attack(input_v, label_v, net, opt.c)
+        adverse_v = attack(input_v, label_v, net, c, targeted)
         net.eval()
-        _, idx = torch.max(net(adverse_v), 1)
+        if ensemble == 1:
+            _, idx = torch.max(net(adverse_v), 1)
+        else:
+            idx = ensemble_infer2(adverse_v, net, ensemble)
         correct += torch.sum(label_v.eq(idx)).data[0]
         tot += output.numel()
     return correct / tot
 
-def peek(dataloader, net, c, normalize_layer, denormalize_layer, targeted=False):
+def peek(dataloader, net, c, targeted=False):
     count, count2, count3 = 0, 0, 0
     for x, y in dataloader:
         x, y = x.cuda(), y.cuda()
         input_v, label_v = Variable(x.cuda()), Variable(y.cuda())
-        adverse_v = attack(input_v, label_v, net, opt.c, normalize_layer, denormalize_layer, targeted)
+        adverse_v = attack(input_v, label_v, net, c, targeted)
         net.eval()
         _, idx = torch.max(net(input_v), 1)
         _, idx2 = torch.max(net(adverse_v), 1)
-        idx3 = ensemble_infer(adverse_v, net)
+        idx3 = ensemble_infer2(adverse_v, net)
         count += torch.sum(label_v.eq(idx)).data[0]
         count2 += torch.sum(label_v.eq(idx2)).data[0]
         count3 += torch.sum(label_v.eq(idx3)).data[0]
@@ -99,14 +117,20 @@ def weights_init(m):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--modelIn', type=str, default=None)
-    parser.add_argument('--c', type=float, default=1.0)
+    parser.add_argument('--c', type=str, default='1.0')
     parser.add_argument('--noiseInit', type=float, default=0)
     parser.add_argument('--noiseInner', type=float, default=0)
     parser.add_argument('--root', type=str, default=None)
+    parser.add_argument('--mode', type=str, default='peek')
+    parser.add_argument('--ensemble', type=int, default=1)
     opt = parser.parse_args()
-
+    # process arguments
     if opt.root is None:
         print("opt.root must be specified")
+        exit(-1)
+    opt.c = [float(c) for c in opt.c.split(',')]
+    if opt.mode == 'peek' and len(opt.c) != 1:
+        print("When opt.mode == 'peek', then only one 'c' is allowed")
         exit(-1)
     net = VGG("VGG16", opt.noiseInit, opt.noiseInner)
     net = nn.DataParallel(net, device_ids=range(1))
@@ -120,8 +144,6 @@ if __name__ == "__main__":
     mean_t = torch.FloatTensor(mean).resize_(1, 3, 1, 1).cuda()
     std = (0.2023, 0.1994, 0.2010)
     std_t = torch.FloatTensor(std).resize_(1, 3, 1, 1).cuda()
-    normalize_layer = Normalize(mean_t, std_t)
-    denormalize_layer = DeNormalize(mean_t, std_t)
     transform_train = tfs.Compose([
         tfs.ToTensor(),
         tfs.Normalize(mean, std),
@@ -135,4 +157,11 @@ if __name__ == "__main__":
     assert data, data_test
     dataloader = DataLoader(data, batch_size=100, shuffle=True, num_workers=2)
     dataloader_test = DataLoader(data_test, batch_size=100, num_workers=2)
-    peek(dataloader_test, net, opt.c, normalize_layer, denormalize_layer, False)
+    if opt.mode == 'peek':
+        peek(dataloader_test, net, opt.c[0], False)
+    elif opt.mode == 'test':
+        print("#c, test accuracy")
+        for c in opt.c:
+            acc = acc_under_attack(dataloader_test, net, c, opt.ensemble, False)
+            print("{}, {}".format(c, acc))
+            sys.stdout.flush()

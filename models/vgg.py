@@ -5,6 +5,7 @@ from torch.autograd import Variable
 from . import layer
 
 Noise = layer.Noise
+BReLU = layer.BReLU
 
 cfg = {
     'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -39,6 +40,7 @@ class VGG(nn.Module):
                 layers += [nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
                            nn.BatchNorm2d(x),
                            nn.ReLU(inplace=True),
+                           #BReLU(),
                            Noise(self.inner_noise)]
                 in_channels = x
         layers += [nn.AvgPool2d(kernel_size=1, stride=1)]

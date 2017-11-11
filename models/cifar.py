@@ -69,8 +69,7 @@ class CIFAR10_Aug(data.Dataset):
                     self.train_labels += entry['fine_labels']
                 fo.close()
 
-            self.train_data = np.concatenate(self.train_data)
-            self.train_data = self.train_data.reshape((-1, 3, 32, 32))
+            self.train_data = np.concatenate(self.train_data).reshape((-1, 3, 32, 32))
             self.train_data = self.train_data.transpose((0, 2, 3, 1))  # convert to HWC
         else:
             f = self.test_list[0][0]
@@ -105,7 +104,7 @@ class CIFAR10_Aug(data.Dataset):
         #print(img)
         # doing this so that it is consistent with all other datasets
         # to return a PIL Image
-        img = Image.fromarray(img, mode='RGB')
+        img = Image.fromarray(img)
 
         if self.transform is not None:
             img = self.transform(img)
