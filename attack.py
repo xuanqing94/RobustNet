@@ -14,7 +14,7 @@ from scipy.stats import mode
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-def attack(input_v, label_v, net, c, targeted):
+def attack_cw(input_v, label_v, net, c):
     net.train()
     n_class = len(classes)
     index = label_v.data.cpu().view(-1,1)
@@ -33,15 +33,24 @@ def attack(input_v, label_v, net, c, targeted):
         real = (torch.max(torch.mul(output, label_onehot_v), 1)[0])
         other = (torch.max(torch.mul(output, (1-label_onehot_v))-label_onehot_v*10000,1)[0])
         error = torch.sum(diff * diff)
-        if targeted:
-            error += c * torch.sum(torch.max(other - real, zero_v))
-        else:
-            error += c * torch.sum(torch.max(real - other, zero_v))
+        error += c * torch.sum(torch.max(real - other, zero_v))
         #print(error.data[0])
         error.backward()
         optimizer.step()
         #TODO: replace with tanh change of variable
         #adverse_v.data.clamp_(0, 1)
+    return adverse_v
+
+def attack_fgsm(input_v, label_v, net, epsilon):
+    loss_f = nn.CrossEntropyLoss()
+    input_v.requires_grad = True
+    adverse = input_v.data.clone()
+    adverse_v = Variable(adverse)
+    outputs = net(input_v)
+    loss = loss_f(outputs, label_v)
+    loss.backward()
+    grad = torch.sign(input_v.grad.data)
+    adverse_v.data += epsilon * grad
     return adverse_v
 
 #Ensemble by voting
@@ -64,18 +73,18 @@ def ensemble_infer2(input_v, net, n=50):
     nclass = len(classes)
     prob = torch.FloatTensor(batch, nclass).zero_().cuda()
     for i in range(n):
-        #add = softmax(net(input_v))
-        #print(add.size(), prob.size())
         prob += softmax(net(input_v)).data
     _, pred = torch.max(prob, 1)
     return Variable(pred)
 
-def acc_under_attack(dataloader, net, c, ensemble=1, targeted=False):
+def acc_under_attack(dataloader, net, c, attack_f, ensemble=1):
     correct = 0
     tot = 0
     for input, output in dataloader:
         input_v, label_v = Variable(input.cuda()), Variable(output.cuda())
-        adverse_v = attack(input_v, label_v, net, c, targeted)
+        # attack
+        adverse_v = attack_f(input_v, label_v, net, c)
+        # defense
         net.eval()
         if ensemble == 1:
             _, idx = torch.max(net(adverse_v), 1)
@@ -85,12 +94,12 @@ def acc_under_attack(dataloader, net, c, ensemble=1, targeted=False):
         tot += output.numel()
     return correct / tot
 
-def peek(dataloader, net, c, targeted=False):
+def peek(dataloader, net, c, attack_f):
     count, count2, count3 = 0, 0, 0
     for x, y in dataloader:
         x, y = x.cuda(), y.cuda()
         input_v, label_v = Variable(x.cuda()), Variable(y.cuda())
-        adverse_v = attack(input_v, label_v, net, c, targeted)
+        adverse_v = attack_f(input_v, label_v, net, c)
         net.eval()
         _, idx = torch.max(net(input_v), 1)
         _, idx2 = torch.max(net(adverse_v), 1)
@@ -116,21 +125,26 @@ def weights_init(m):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--modelIn', type=str, default=None)
+    parser.add_argument('--modelIn', required=True)
     parser.add_argument('--c', type=str, default='1.0')
     parser.add_argument('--noiseInit', type=float, default=0)
     parser.add_argument('--noiseInner', type=float, default=0)
-    parser.add_argument('--root', type=str, default=None)
+    parser.add_argument('--root', required=True)
+    parser.add_argument('--attack', required=True)
     parser.add_argument('--mode', type=str, default='peek')
     parser.add_argument('--ensemble', type=int, default=1)
     opt = parser.parse_args()
-    # process arguments
-    if opt.root is None:
-        print("opt.root must be specified")
-        exit(-1)
+    # parse c
     opt.c = [float(c) for c in opt.c.split(',')]
     if opt.mode == 'peek' and len(opt.c) != 1:
         print("When opt.mode == 'peek', then only one 'c' is allowed")
+        exit(-1)
+    if opt.attack == 'CW':
+        attack_f = attack_cw
+    elif opt.attack == 'FGSM':
+        attack_f = attack_fgsm
+    else:
+        print('Invalid attacker name')
         exit(-1)
     net = VGG("VGG16", opt.noiseInit, opt.noiseInner)
     net = nn.DataParallel(net, device_ids=range(1))
@@ -158,10 +172,10 @@ if __name__ == "__main__":
     dataloader = DataLoader(data, batch_size=100, shuffle=True, num_workers=2)
     dataloader_test = DataLoader(data_test, batch_size=100, num_workers=2)
     if opt.mode == 'peek':
-        peek(dataloader_test, net, opt.c[0], False)
+        peek(dataloader_test, net, opt.c[0], attack_f)
     elif opt.mode == 'test':
         print("#c, test accuracy")
         for c in opt.c:
-            acc = acc_under_attack(dataloader_test, net, c, opt.ensemble, False)
+            acc = acc_under_attack(dataloader_test, net, c, attack_f, opt.ensemble)
             print("{}, {}".format(c, acc))
             sys.stdout.flush()
