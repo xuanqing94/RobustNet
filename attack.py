@@ -114,6 +114,8 @@ def acc_under_attack(dataloader, net, src_net, c, attack_f, ensemble=1):
         tot += output.numel()
         diff = input_v.data - adverse_v.data
         distort += torch.sum(diff * diff)
+        if k >= 15:
+            break
     return correct / tot, np.sqrt(distort / tot)
 
 def peek(dataloader, net, src_net, c, attack_f, denormalize_layer):
@@ -224,7 +226,7 @@ if __name__ == "__main__":
         exit(-1)
     assert data, data_test
     dataloader = DataLoader(data, batch_size=100, shuffle=True, num_workers=2)
-    dataloader_test = DataLoader(data_test, batch_size=100, shuffle=True, num_workers=2)
+    dataloader_test = DataLoader(data_test, batch_size=100, shuffle=False, num_workers=2)
     if opt.mode == 'peek':
         peek(dataloader_test, net, src_net, opt.c[0], attack_f, denormalize_layer)
     elif opt.mode == 'test':

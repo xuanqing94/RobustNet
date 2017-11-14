@@ -1,16 +1,16 @@
 #!/bin/bash
-dataset=stl10
-root=~/data/stl10
+dataset=cifar10
+root=~/data/cifar10-py
 
-net=stl10_model
+net=resnext
 
 attack=CW
 
-noise_init=0.9
-noise_inner=0.2
-ensemble=50
+noise_init=0
+noise_inner=0
+ensemble=1
 
-defense=ours_${noise_init}_${noise_inner}_${ensemble}
+defense=ours_${net}_${noise_init}_${noise_inner}_${ensemble}
 c=0.01,0.03,0.06,0.1,0.2,0.4,0.8,1,2,3,4,7,10,30,70,100
 #c=0.01,0.03,0.04,0.06,0.08,0.1,0.12,0.14,0.2
 #c=0.9

@@ -17,13 +17,14 @@ def readf(fn):
 
 
 if __name__ == "__main__":
-    method="FGSM"
+    method="CW"
     dataset="cifar10"
-    algo = ["ours_0_0_1", "ours_0.9_0.2_50"]
-    color = ["r", "g"]
-    for c, a in zip(color, algo):
-        x, y = readf('./experiment/{}_{}_{}'.format(dataset, method, a))
-        plt.semilogx(x, 100 * y, color=c, label=a)
+    model = "vgg16"
+    algo = ["0.9_0.2_1", "0.9_0.2_50"]
+    labels = ["1-ensemble", "50-ensemble"]
+    for lab, a in zip(labels, algo):
+        x, y = readf('./experiment/{}_{}_ours_{}_{}'.format(dataset, method, model, a))
+        plt.semilogx(x, 100 * y, label=lab)
 
     plt.xlabel('c')
     plt.ylabel('Accuracy (%)')
