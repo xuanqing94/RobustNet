@@ -99,6 +99,7 @@ def ensemble_infer2(input_v, net, n=50):
 def acc_under_attack(dataloader, net, src_net, c, attack_f, ensemble=1):
     correct = 0
     tot = 0
+    distort = 0.0
     for k, (input, output) in enumerate(dataloader):
         input_v, label_v = Variable(input.cuda()), Variable(output.cuda())
         # attack
@@ -111,7 +112,9 @@ def acc_under_attack(dataloader, net, src_net, c, attack_f, ensemble=1):
             idx = ensemble_infer2(adverse_v, net, ensemble)
         correct += torch.sum(label_v.eq(idx)).data[0]
         tot += output.numel()
-    return correct / tot
+        diff = input_v.data - adverse_v.data
+        distort += torch.sum(diff * diff)
+    return correct / tot, np.sqrt(distort / tot)
 
 def peek(dataloader, net, src_net, c, attack_f, denormalize_layer):
     count, count2, count3 = 0, 0, 0
@@ -146,6 +149,8 @@ def weights_init(m):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', required=True)
+    parser.add_argument('--net', required=True)
     parser.add_argument('--srcModel', required=True)
     parser.add_argument('--dstModel', required=True)
     parser.add_argument('--c', type=str, default='1.0')
@@ -170,31 +175,53 @@ if __name__ == "__main__":
     else:
         print('Invalid attacker name')
         exit(-1)
-    net = VGG("VGG16", opt.noiseInit, opt.noiseInner)
-    src_net = VGG("VGG16", 0, 0)
+    if opt.net == "vgg16" or opt.net == "vgg16-robust":
+        net = VGG("VGG16", opt.noiseInit, opt.noiseInner)
+    elif opt.net == "resnext":
+        net = ResNeXt29_2x64d(opt.noiseInit, opt.noiseInner)
+    elif opt.net == "stl10_model":
+        net = stl10(32, noise_init=opt.noiseInit, noise_inner=opt.noiseInner)
     net = nn.DataParallel(net, device_ids=range(1))
-    src_net = nn.DataParallel(src_net, device_ids=range(1))
     loss_f = nn.CrossEntropyLoss()
     net.load_state_dict(torch.load(opt.dstModel))
-    src_net.load_state_dict(torch.load(opt.srcModel))
     net.cuda()
-    src_net.cuda()
     loss_f.cuda()
-    mean = (0.4914, 0.4822, 0.4465)
-    mean_t = torch.FloatTensor(mean).resize_(1, 3, 1, 1).cuda()
-    std = (0.2023, 0.1994, 0.2010)
-    std_t = torch.FloatTensor(std).resize_(1, 3, 1, 1).cuda()
-    denormalize_layer = DeNormalize(mean_t, std_t)
-    transform_train = tfs.Compose([
-        tfs.ToTensor(),
-        tfs.Normalize(mean, std),
-    ])
-    transform_test = tfs.Compose([
-        tfs.ToTensor(),
-        tfs.Normalize(mean, std),
+
+    if opt.dataset == 'cifar10':
+        mean = (0.4914, 0.4822, 0.4465)
+        mean_t = torch.FloatTensor(mean).resize_(1, 3, 1, 1).cuda()
+        std = (0.2023, 0.1994, 0.2010)
+        std_t = torch.FloatTensor(std).resize_(1, 3, 1, 1).cuda()
+        denormalize_layer = DeNormalize(mean_t, std_t)
+        transform_train = tfs.Compose([
+            tfs.RandomCrop(32, padding=4),
+            tfs.RandomHorizontalFlip(),
+            tfs.ToTensor(),
+            tfs.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
-    data = dst.CIFAR10(opt.root, download=True, train=True, transform=transform_train)
-    data_test = dst.CIFAR10(opt.root, download=True, train=False, transform=transform_test)
+
+        transform_test = tfs.Compose([
+            tfs.ToTensor(),
+            tfs.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            ])
+        data = dst.CIFAR10(opt.root, download=False, train=True, transform=transform_train)
+        data_test = dst.CIFAR10(opt.root, download=False, train=False, transform=transform_test)
+    elif opt.dataset == 'stl10':
+        transform_train = tfs.Compose([
+            tfs.RandomCrop(96, padding=4),
+            tfs.RandomHorizontalFlip(),
+            tfs.ToTensor(),
+            tfs.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        ])
+        transform_test = tfs.Compose([
+            tfs.ToTensor(),
+            tfs.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        ])
+        data = dst.STL10(opt.root, split='train', download=False, transform=transform_train)
+        data_test = dst.STL10(opt.root, split='test', download=False, transform=transform_test)
+    else:
+        print("Invalid dataset")
+        exit(-1)
     assert data, data_test
     dataloader = DataLoader(data, batch_size=100, shuffle=True, num_workers=2)
     dataloader_test = DataLoader(data_test, batch_size=100, shuffle=True, num_workers=2)
@@ -203,6 +230,6 @@ if __name__ == "__main__":
     elif opt.mode == 'test':
         print("#c, test accuracy")
         for c in opt.c:
-            acc = acc_under_attack(dataloader_test, net, src_net, c, attack_f, opt.ensemble)
-            print("{}, {}".format(c, acc))
+            acc, avg_distort = acc_under_attack(dataloader_test, net, net, c, attack_f, opt.ensemble)
+            print("{}, {}, {}".format(c, acc, avg_distort))
             sys.stdout.flush()
