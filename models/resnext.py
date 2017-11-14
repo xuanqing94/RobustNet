@@ -36,14 +36,14 @@ class Block(nn.Module):
         self.noise3 = Noise(std)
 
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.noise1(out)
+        out = self.noise1(x)
+        out = self.conv1(out)
         out = F.relu(self.bn1(out))
-        out = self.conv2(out)
         out = self.noise2(out)
+        out = self.conv2(out)
         out = F.relu(self.bn2(out))
-        out = self.conv3(out)
         out = self.noise3(out)
+        out = self.conv3(out)
         out = self.bn3(out)
         out += self.shortcut(x)
         out = F.relu(out)
@@ -51,12 +51,13 @@ class Block(nn.Module):
 
 
 class ResNeXt(nn.Module):
-    def __init__(self, num_blocks, cardinality, bottleneck_width, num_classes=10, std=0):
+    def __init__(self, num_blocks, cardinality, bottleneck_width, num_classes=10, noise_init=0, noise_inner=0):
         super(ResNeXt, self).__init__()
         self.cardinality = cardinality
         self.bottleneck_width = bottleneck_width
         self.in_planes = 64
-        self.std = std
+        self.noise_init = noise_init
+        self.noise_inner = noise_inner
         self.conv1 = nn.Conv2d(3, 64, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(num_blocks[0], 1)
@@ -64,21 +65,21 @@ class ResNeXt(nn.Module):
         self.layer3 = self._make_layer(num_blocks[2], 2)
         # self.layer4 = self._make_layer(num_blocks[3], 2)
         self.linear = nn.Linear(cardinality*bottleneck_width*8, num_classes)
-        self.init_noise = Noise(std)
+        self.init_noise = Noise(noise_init)
 
     def _make_layer(self, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
         layers = []
         for stride in strides:
-            layers.append(Block(self.in_planes, self.cardinality, self.bottleneck_width, stride, self.std))
+            layers.append(Block(self.in_planes, self.cardinality, self.bottleneck_width, stride, self.noise_inner))
             self.in_planes = Block.expansion * self.cardinality * self.bottleneck_width
         # Increase bottleneck_width by 2 after each stage.
         self.bottleneck_width *= 2
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.init_noise(out)
+        out = self.init_noise(x)
+        out = self.conv1(out)
         out = F.relu(self.bn1(out))
         out = self.layer1(out)
         out = self.layer2(out)
@@ -90,8 +91,8 @@ class ResNeXt(nn.Module):
         return out
 
 
-def ResNeXt29_2x64d(std=0):
-    return ResNeXt(num_blocks=[3,3,3], cardinality=2, bottleneck_width=64, std=std)
+def ResNeXt29_2x64d(noise_init, noise_inner):
+    return ResNeXt(num_blocks=[3,3,3], cardinality=2, bottleneck_width=64, noise_init=noise_init, noise_inner=noise_inner)
 
 def ResNeXt29_4x64d(std=0):
     return ResNeXt(num_blocks=[3,3,3], cardinality=4, bottleneck_width=64, std=std)

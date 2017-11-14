@@ -11,3 +11,4 @@ from .shufflenet import *
 from .preact_resnet import *
 from .layer import *
 from .cifar import *
+from .stl10_model import *

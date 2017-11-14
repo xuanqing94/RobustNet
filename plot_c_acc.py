@@ -8,7 +8,7 @@ def readf(fn):
     c = []
     acc = []
     for l in open(fn, 'r'):
-        if l[0] == '#':
+        if l[0] in ('#', 'F'):
             continue
         items = l.split(',')
         c.append(float(items[0]))
@@ -17,12 +17,13 @@ def readf(fn):
 
 
 if __name__ == "__main__":
-    c1, acc_none = readf('./experiment/cifar10_CW_nodefense')
-    c2, acc_our = readf('./experiment/cifar10_CW_ours_0.6_0.1')
-    c3, acc_our_ensemble = readf('./experiment/cifar10_CW_ours_ensemble50_tmp')
-    plt.semilogx(c1, 100 * acc_none, 'r', label='No defense')
-    plt.semilogx(c2, 100 * acc_our, 'b', label='Ours, ensemble=1')
-    plt.semilogx(c3, 100 * acc_our_ensemble, 'g', label='Ours, ensemble=50')
+    method="FGSM"
+    dataset="cifar10"
+    algo = ["ours_0_0_1", "ours_0.9_0.2_50"]
+    color = ["r", "g"]
+    for c, a in zip(color, algo):
+        x, y = readf('./experiment/{}_{}_{}'.format(dataset, method, a))
+        plt.semilogx(x, 100 * y, color=c, label=a)
 
     plt.xlabel('c')
     plt.ylabel('Accuracy (%)')
