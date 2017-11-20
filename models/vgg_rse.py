@@ -5,7 +5,6 @@ from torch.autograd import Variable
 from . import layer
 
 Noise = layer.Noise
-BReLU = layer.BReLU
 
 cfg = {
     'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -16,8 +15,10 @@ cfg = {
 
 
 class VGG(nn.Module):
-    def __init__(self, vgg_name):
+    def __init__(self, vgg_name, init_noise, inner_noise):
         super(VGG, self).__init__()
+        self.init_noise = init_noise
+        self.inner_noise = inner_noise
         self.classifier = nn.Linear(512, 10)
         self.features = self._make_layers(cfg[vgg_name])
 
@@ -30,13 +31,19 @@ class VGG(nn.Module):
     def _make_layers(self, cfg):
         layers = []
         in_channels = 3
-        for x in cfg:
+        for i, x in enumerate(cfg):
             if x == 'M':
                 layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             else:
-                layers += [nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
-                           nn.BatchNorm2d(x),
-                           nn.ReLU(inplace=True)]
+                if i == 1:
+                    noise_layer = Noise(self.init_noise)
+                else:
+                    noise_layer = Noise(self.inner_noise)
+                layers += [
+                        noise_layer,
+                        nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
+                        nn.BatchNorm2d(x),
+                        nn.ReLU(inplace=True)]
                 in_channels = x
         layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
         return nn.Sequential(*layers)

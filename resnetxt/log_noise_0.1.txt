@@ -1,8 +1,0 @@
-Namespace(batchSize=128, epoch=300, lr=0.1, method='momsgd', modelIn=None, modelOut='./resnetxt/noise_0.1.pth', ngpu=1, noise=0.1)
-Files already downloaded and verified
-Files already downloaded and verified
-[Epoch=1] Time:132.87, Train: 0.16512, Test: 0.20050, Best: 0.20050
-[Epoch=2] Time:231.15, Train: 0.27498, Test: 0.36000, Best: 0.36000
-[Epoch=3] Time:330.76, Train: 0.37730, Test: 0.41260, Best: 0.41260
-[Epoch=4] Time:431.03, Train: 0.45090, Test: 0.49270, Best: 0.49270
-[Epoch=5] Time:531.64, Train: 0.53452, Test: 0.55480, Best: 0.55480

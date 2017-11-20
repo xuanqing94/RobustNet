@@ -1,0 +1,17 @@
+Namespace(batchSize=128, dataset='cifar10', lr=0.1, method='momsgd', modelOut='./resnext/rse_0.4_0.1.pth', net='resnext', ngpu=1, noiseInit=0.4, noiseInner=0.1, root='/home/luinx/data/cifar10-py')
+[Epoch=1] Time:129.18, Train: 0.18054, Test: 0.20170, Best: 0.20170
+[Epoch=2] Time:225.72, Train: 0.24328, Test: 0.26230, Best: 0.26230
+[Epoch=3] Time:322.56, Train: 0.28668, Test: 0.31870, Best: 0.31870
+[Epoch=4] Time:419.48, Train: 0.33240, Test: 0.33920, Best: 0.33920
+[Epoch=5] Time:516.42, Train: 0.36670, Test: 0.38640, Best: 0.38640
+[Epoch=6] Time:613.36, Train: 0.39214, Test: 0.38220, Best: 0.38640
+[Epoch=7] Time:710.29, Train: 0.41120, Test: 0.43120, Best: 0.43120
+[Epoch=8] Time:807.30, Train: 0.43038, Test: 0.42860, Best: 0.43120
+[Epoch=9] Time:904.30, Train: 0.44546, Test: 0.41020, Best: 0.43120
+[Epoch=10] Time:1001.29, Train: 0.46188, Test: 0.43050, Best: 0.43120
+[Epoch=11] Time:1098.32, Train: 0.46992, Test: 0.43700, Best: 0.43700
+[Epoch=12] Time:1195.36, Train: 0.48040, Test: 0.43420, Best: 0.43700
+[Epoch=13] Time:1292.35, Train: 0.48928, Test: 0.43100, Best: 0.43700
+[Epoch=14] Time:1389.36, Train: 0.49730, Test: 0.47680, Best: 0.47680
+[Epoch=15] Time:1486.39, Train: 0.50754, Test: 0.44930, Best: 0.47680
+[Epoch=16] Time:1583.47, Train: 0.50942, Test: 0.50720, Best: 0.50720

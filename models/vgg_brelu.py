@@ -16,13 +16,15 @@ cfg = {
 
 
 class VGG(nn.Module):
-    def __init__(self, vgg_name):
+    def __init__(self, vgg_name, init_noise):
         super(VGG, self).__init__()
+        self.init_noise = Noise(init_noise)
         self.classifier = nn.Linear(512, 10)
         self.features = self._make_layers(cfg[vgg_name])
 
     def forward(self, x):
-        out = self.features(x)
+        out = self.init_noise(x)
+        out = self.features(out)
         out = out.view(out.size(0), -1)
         out = self.classifier(out)
         return out
@@ -36,7 +38,7 @@ class VGG(nn.Module):
             else:
                 layers += [nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
                            nn.BatchNorm2d(x),
-                           nn.ReLU(inplace=True)]
+                           BReLU()]
                 in_channels = x
         layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
         return nn.Sequential(*layers)

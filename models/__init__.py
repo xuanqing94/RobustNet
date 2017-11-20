@@ -1,14 +1,3 @@
-from .vgg import *
-from .dpn import *
-from .lenet import *
-from .senet import *
-from .resnet import *
-from .resnext import *
-from .densenet import *
-from .googlenet import *
-from .mobilenet import *
-from .shufflenet import *
-from .preact_resnet import *
-from .layer import *
-from .cifar import *
-from .stl10_model import *
+from . import stl10_model, stl10_model_brelu, stl10_model_rse
+from . import vgg, vgg_brelu, vgg_rse
+from . import resnext, resnext_brelu, resnext_rse

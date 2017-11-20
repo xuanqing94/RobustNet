@@ -1,5 +1,0 @@
-Namespace(batchSize=128, epoch=300, lr=0.1, method='momsgd', modelIn=None, modelOut='./vgg16/noise_0.3.pth', net='vgg16', ngpu=1, noise=0.3)
-Files already downloaded and verified
-Files already downloaded and verified
-[Epoch=1] Time:37.17, Train: 0.15234, Test: 0.13230, Best: 0.13230
-[Epoch=2] Time:69.65, Train: 0.18000, Test: 0.17710, Best: 0.17710

@@ -7,27 +7,61 @@ import matplotlib.pyplot as plt
 def readf(fn):
     c = []
     acc = []
+    distort = []
     for l in open(fn, 'r'):
         if l[0] in ('#', 'F'):
             continue
         items = l.split(',')
         c.append(float(items[0]))
         acc.append(float(items[1]))
-    return np.array(c), np.array(acc)
+        distort.append(float(items[2]))
+    return np.array(c), np.array(acc), np.array(distort)
 
 
 if __name__ == "__main__":
-    method="CW"
-    dataset="cifar10"
-    model = "vgg16"
-    algo = ["0.9_0.2_1", "0.9_0.2_50"]
-    labels = ["1-ensemble", "50-ensemble"]
-    for lab, a in zip(labels, algo):
-        x, y = readf('./experiment/{}_{}_ours_{}_{}'.format(dataset, method, model, a))
-        plt.semilogx(x, 100 * y, label=lab)
-
-    plt.xlabel('c')
-    plt.ylabel('Accuracy (%)')
+    plt.subplot(131)
+    dataset = "cifar10"
+    attack = "CW"
+    net = "vgg16"
+    methods = ["0_0_1", "0_0_1_adv", "0.25_0_1", "0.9_0.2_50", "dd_net_50"]
+    labels = ["No defense", "Adv retraining", "Robust Opt+BReLU", "RSE", "Distill"]
+    files = ["./experiment/{}_{}_ours_{}_{}".format(dataset, attack, net, method) for method in methods]
+    for lab,f in zip(labels, files):
+        c, acc, distort = readf(f)
+        plt.plot(distort, 100*acc, label=lab)
+    plt.xlabel("Avg distortion")
+    plt.ylabel("Accuracy (%)")
     plt.legend()
-    plt.grid()
+    plt.title("CIFAR10+VGG16")
+
+    plt.subplot(132)
+    dataset = "cifar10"
+    attack = "CW"
+    net = "resnext"
+    methods = ["0_0_1", "0_0_1_adv", "0.25_0_1", "0.7_0.1_50", "dd_net_50"]
+    labels = ["No defense", "Adv retraining", "Robust Opt+BReLU", "RSE", "Distill"]
+    files = ["./experiment/{}_{}_ours_{}_{}".format(dataset, attack, net, method) for method in methods]
+    for lab,f in zip(labels, files):
+        c, acc, distort = readf(f)
+        plt.plot(distort, 100*acc, label=lab)
+    plt.xlabel("Avg distortion")
+    plt.ylabel("Accuracy (%)")
+    plt.legend()
+    plt.title("CIFAR10+ResNeXt")
+
+    plt.subplot(133)
+    dataset = "stl10"
+    attack = "CW"
+    net = "stl10_model"
+    methods = ["0_0_1", "0_0_1_adv", "0.25_0_1", "0.9_0.2_50", "dd_net_50"]
+    labels = ["No defense", "Adv retraining", "Robust Opt+BReLU", "RSE", "Distill"]
+    files = ["./experiment/{}_{}_ours_{}_{}".format(dataset, attack, net, method) for method in methods]
+    for lab,f in zip(labels, files):
+        c, acc, distort = readf(f)
+        plt.plot(distort, 100*acc, label=lab)
+
+    plt.xlabel("Avg distortion")
+    plt.ylabel("Accuracy (%)")
+    plt.legend()
+    plt.title("STL10+Model A")
     plt.show()

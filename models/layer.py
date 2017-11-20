@@ -9,7 +9,7 @@ class Noise(nn.Module):
         self.buffer = None
 
     def forward(self, x):
-        if self.std > 1.0e-6:
+        if self.std > 0:
             if self.buffer is None:
                 self.buffer = Variable(torch.Tensor(x.size()).normal_(0, self.std).cuda(), requires_grad=False)
             else:
