@@ -17,6 +17,7 @@ import copy
 stl10 = models.stl10_model.stl10
 VGG = models.vgg.VGG
 ResNeXt29_2x64d = models.resnext.ResNeXt29_2x64d
+ResNeXt29_8x64d = models.resnext.ResNeXt29_8x64d
 
 def attack_fgsm(input_v, label_v, net, epsilon):
     net.zero_grad()
@@ -132,6 +133,17 @@ def main():
             ])
         data = dst.CIFAR10(opt.root, download=False, train=True, transform=transform_train)
         data_test = dst.CIFAR10(opt.root, download=False, train=False, transform=transform_test)
+    elif opt.dataset == 'imagenet32':
+        transform_train = tfs.Compose([
+            tfs.RandomCrop(32, padding=4),
+            tfs.RandomHorizontalFlip(),
+            tfs.ToTensor()
+        ])
+        transform_test = tfs.Compose([
+            tfs.ToTensor()
+            ])
+        data = models.imagenet32.Imagenet32(opt.root, train=True, transform=transform_train)
+        data_test = models.imagenet32.Imagenet32(opt.root, train=False, transform=transform_test)
     elif opt.dataset == 'stl10':
         transform_train = tfs.Compose([
             tfs.RandomCrop(96, padding=4),

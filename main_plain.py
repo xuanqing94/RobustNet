@@ -17,6 +17,7 @@ import copy
 stl10 = models.stl10_model.stl10
 VGG = models.vgg.VGG
 ResNeXt29_2x64d = models.resnext.ResNeXt29_2x64d
+ResNeXt29_8x64d = models.resnext.ResNeXt29_8x64d
 
 # train one epoch
 def train(dataloader, net, loss_f, optimizer):
@@ -87,7 +88,10 @@ def main():
     elif opt.net == "vgg16":
         net = VGG("VGG16")
     elif opt.net == "resnext":
-        net = ResNeXt29_2x64d()
+        if opt.dataset == "cifar10":
+            net = ResNeXt29_2x64d()
+        if opt.dataset == "imagenet32":
+            net = ResNeXt29_8x64d()
     elif opt.net == "stl10_model":
         net = stl10(32)
     else:
@@ -112,6 +116,17 @@ def main():
             ])
         data = dst.CIFAR10(opt.root, download=False, train=True, transform=transform_train)
         data_test = dst.CIFAR10(opt.root, download=False, train=False, transform=transform_test)
+    elif opt.dataset == 'imagenet32':
+        transform_train = tfs.Compose([
+            tfs.RandomCrop(32, padding=4),
+            tfs.RandomHorizontalFlip(),
+            tfs.ToTensor()
+        ])
+        transform_test = tfs.Compose([
+            tfs.ToTensor()
+            ])
+        data = models.imagenet32.Imagenet32(opt.root, train=True, transform=transform_train)
+        data_test = models.imagenet32.Imagenet32(opt.root, train=False, transform=transform_test)
     elif opt.dataset == 'stl10':
         transform_train = tfs.Compose([
             tfs.RandomCrop(96, padding=4),

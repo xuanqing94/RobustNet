@@ -15,7 +15,8 @@ from scipy.stats import mode
 import models
 
 def attack_cw(input_v, label_v, net, c, untarget=True, n_class=10):
-    net.train()
+    net.eval()
+    #net.train()
     index = label_v.data.cpu().view(-1, 1)
     label_onehot = torch.FloatTensor(input_v.size()[0], n_class)
     label_onehot.zero_()
@@ -176,7 +177,6 @@ if __name__ == "__main__":
         transform_test = tfs.Compose([
             tfs.ToTensor(),
             ])
-        data = dst.CIFAR10(opt.root, download=False, train=True, transform=transform_train)
         data_test = dst.CIFAR10(opt.root, download=False, train=False, transform=transform_test)
     elif opt.dataset == 'stl10':
         transform_train = tfs.Compose([
@@ -187,13 +187,11 @@ if __name__ == "__main__":
         transform_test = tfs.Compose([
             tfs.ToTensor(),
         ])
-        data = dst.STL10(opt.root, split='train', download=False, transform=transform_train)
         data_test = dst.STL10(opt.root, split='test', download=False, transform=transform_test)
     else:
         print("Invalid dataset")
         exit(-1)
-    assert data, data_test
-    dataloader = DataLoader(data, batch_size=100, shuffle=True, num_workers=2)
+    assert data_test
     dataloader_test = DataLoader(data_test, batch_size=100, shuffle=False)
     if opt.mode == 'peek':
         peek(dataloader_test, net, src_net, opt.c[0], attack_f, denormalize_layer)

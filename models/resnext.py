@@ -82,3 +82,5 @@ class ResNeXt(nn.Module):
 def ResNeXt29_2x64d():
     return ResNeXt(num_blocks=[3,3,3], cardinality=2, bottleneck_width=64)
 
+def ResNeXt29_8x64d():
+    return ResNeXt(num_blocks=[3,3,3], cardinality=2, bottleneck_width=64, num_classes=1000)

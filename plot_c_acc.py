@@ -19,49 +19,80 @@ def readf(fn):
 
 
 if __name__ == "__main__":
-    plt.subplot(131)
-    dataset = "cifar10"
-    attack = "CW"
-    net = "vgg16"
-    methods = ["0_0_1", "0_0_1_adv", "0.25_0_1", "0.9_0.2_50", "dd_net_50"]
-    labels = ["No defense", "Adv retraining", "Robust Opt+BReLU", "RSE", "Distill"]
-    files = ["./experiment/{}_{}_ours_{}_{}".format(dataset, attack, net, method) for method in methods]
-    for lab,f in zip(labels, files):
-        c, acc, distort = readf(f)
-        plt.plot(distort, 100*acc, label=lab)
-    plt.xlabel("Avg distortion")
-    plt.ylabel("Accuracy (%)")
-    plt.legend()
-    plt.title("CIFAR10+VGG16")
-
-    plt.subplot(132)
-    dataset = "cifar10"
-    attack = "CW"
-    net = "resnext"
-    methods = ["0_0_1", "0_0_1_adv", "0.25_0_1", "0.7_0.1_50", "dd_net_50"]
-    labels = ["No defense", "Adv retraining", "Robust Opt+BReLU", "RSE", "Distill"]
-    files = ["./experiment/{}_{}_ours_{}_{}".format(dataset, attack, net, method) for method in methods]
-    for lab,f in zip(labels, files):
-        c, acc, distort = readf(f)
-        plt.plot(distort, 100*acc, label=lab)
-    plt.xlabel("Avg distortion")
-    plt.ylabel("Accuracy (%)")
-    plt.legend()
-    plt.title("CIFAR10+ResNeXt")
-
-    plt.subplot(133)
+    lw = 1.5
+    plt.subplot(231)
     dataset = "stl10"
-    attack = "CW"
+    attack = "cw"
     net = "stl10_model"
-    methods = ["0_0_1", "0_0_1_adv", "0.25_0_1", "0.9_0.2_50", "dd_net_50"]
+    methods = ["plain", "adv", "brelu", "rse", "dd"]
     labels = ["No defense", "Adv retraining", "Robust Opt+BReLU", "RSE", "Distill"]
-    files = ["./experiment/{}_{}_ours_{}_{}".format(dataset, attack, net, method) for method in methods]
-    for lab,f in zip(labels, files):
+    colors = ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e']
+    files = ["./accuracy/{}_{}_{}_{}.acc".format(attack, dataset, net, method) for method in methods]
+    for col, lab,f in zip(colors, labels, files):
         c, acc, distort = readf(f)
-        plt.plot(distort, 100*acc, label=lab)
+        plt.semilogx(c, 100*acc, label=lab, color=col, linestyle='-', lw=lw)
+    plt.xlabel('C')
+    plt.ylabel('Accuracy (%)')
+    plt.legend(loc=1)
 
-    plt.xlabel("Avg distortion")
-    plt.ylabel("Accuracy (%)")
-    plt.legend()
-    plt.title("STL10+Model A")
+    plt.subplot(234)
+    for col, lab, f in zip(colors, labels, files):
+        c, acc, distort = readf(f)
+        plt.semilogx(c, distort, label=lab, color=col, linestyle='-', lw=lw)
+    plt.xlabel('C')
+    plt.ylabel('Avg. Distortion')
+    plt.legend(loc=2)
+
+    # ==================================================================================================
+
+    plt.subplot(232)
+    dataset = "cifar10"
+    attack = "cw"
+    net = "vgg16"
+    methods = ["plain", "adv", "brelu", "rse", "dd"]
+    labels = ["No defense", "Adv retraining", "Robust Opt+BReLU", "RSE", "Distill"]
+    colors = ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e']
+    files = ["./accuracy/{}_{}_{}_{}.acc".format(attack, dataset, net, method) for method in methods]
+    for col, lab,f in zip(colors, labels, files):
+        c, acc, distort = readf(f)
+        plt.semilogx(c, 100*acc, label=lab, color=col, linestyle='-', lw=lw)
+    plt.xlabel('C')
+    #plt.ylabel('Accuracy (%)')
+    plt.legend(loc=1)
+
+    plt.subplot(235)
+    for col, lab, f in zip(colors, labels, files):
+        c, acc, distort = readf(f)
+        plt.semilogx(c, distort, label=lab, color=col, linestyle='-', lw=lw)
+    plt.xlabel('C')
+    #plt.ylabel('Avg. Distortion')
+    plt.legend(loc=2)
+
+    # ================================================================================================
+
+    plt.subplot(233)
+    dataset = "cifar10"
+    attack = "cw"
+    net = "resnext"
+    methods = ["plain", "adv", "brelu", "rse", "dd"]
+    labels = ["No defense", "Adv retraining", "Robust Opt+BReLU", "RSE", "Distill"]
+    colors = ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e']
+    files = ["./accuracy/{}_{}_{}_{}.acc".format(attack, dataset, net, method) for method in methods]
+    for col, lab,f in zip(colors, labels, files):
+        c, acc, distort = readf(f)
+        plt.semilogx(c, 100*acc, label=lab, color=col, linestyle='-', lw=lw)
+    plt.xlabel('C')
+    #plt.ylabel('Accuracy (%)')
+    plt.legend(loc=1)
+
+    plt.subplot(236)
+    for col, lab, f in zip(colors, labels, files):
+        c, acc, distort = readf(f)
+        plt.semilogx(c, distort, label=lab, color=col, linestyle='-', lw=lw)
+    plt.xlabel('C')
+    #plt.ylabel('Avg. Distortion')
+    plt.legend(loc=2)
+
+
+
     plt.show()
